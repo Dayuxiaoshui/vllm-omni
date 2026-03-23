@@ -1621,9 +1621,9 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                 logprobs = None
 
             if self.use_harmony:
-                reasoning_content, content, _ = parse_chat_output(token_ids)
+                reasoning, content, _ = parse_chat_output(token_ids)
                 if not request.include_reasoning:
-                    reasoning_content = None
+                    reasoning = None
 
                 if self.tool_parser is not None:
                     tool_parser = self.tool_parser(tokenizer)
@@ -1636,14 +1636,14 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                     content = tool_call_info.content
                     message = ChatMessage(
                         role=role,
-                        reasoning_content=reasoning_content,
+                        reasoning=reasoning,
                         content=content,
                         tool_calls=tool_call_info.tool_calls,
                     )
                 else:
                     message = ChatMessage(
                         role=role,
-                        reasoning_content=reasoning_content,
+                        reasoning=reasoning,
                         content=content,
                     )
 
@@ -1664,11 +1664,11 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
             if reasoning_parser:
                 # If the reasoning parser is enabled,
                 # tool calls are extracted exclusively from the content.
-                reasoning_content, content = reasoning_parser.extract_reasoning(output.text, request=request)
+                reasoning, content = reasoning_parser.extract_reasoning(output.text, request=request)
                 if not request.include_reasoning:
-                    reasoning_content = None
+                    reasoning = None
             else:
-                reasoning_content = None
+                reasoning = None
                 content = output.text
 
             auto_tools_called = False
@@ -1678,14 +1678,14 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                 not isinstance(request.tool_choice, ChatCompletionNamedToolChoiceParam)
                 and request.tool_choice != "required"
             ):
-                message = ChatMessage(role=role, reasoning_content=reasoning_content, content=content)
+                message = ChatMessage(role=role, reasoning=reasoning, content=content)
 
             # if the request uses tools and specified a tool choice
             elif request.tool_choice and type(request.tool_choice) is ChatCompletionNamedToolChoiceParam:
                 tool_call_class = MistralToolCall if isinstance(tokenizer, MistralTokenizer) else ToolCall
                 message = ChatMessage(
                     role=role,
-                    reasoning_content=reasoning_content,
+                    reasoning=reasoning,
                     content="",
                     tool_calls=[
                         tool_call_class(
@@ -1727,13 +1727,13 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                         )
                         for i, tool_call in enumerate(tool_calls)
                     ],
-                    reasoning_content=reasoning_content,
+                    reasoning=reasoning,
                 )
 
             # if the request doesn't use tool choice
             # OR specifies to not use a tool
             elif not request.tool_choice or request.tool_choice == "none":
-                message = ChatMessage(role=role, reasoning_content=reasoning_content, content=content)
+                message = ChatMessage(role=role, reasoning=reasoning, content=content)
 
             # handle when there are tools and tool choice is auto
             elif (
@@ -1756,7 +1756,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                 if tool_call_info.tools_called:
                     message = ChatMessage(
                         role=role,
-                        reasoning_content=reasoning_content,
+                        reasoning=reasoning,
                         content=tool_call_info.content,
                         tool_calls=tool_call_info.tool_calls,
                     )
@@ -1772,7 +1772,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                         ret_content = tool_call_info.content
                     message = ChatMessage(
                         role=role,
-                        reasoning_content=reasoning_content,
+                        reasoning=reasoning,
                         content=ret_content,
                     )
 
@@ -1782,7 +1782,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                     "Error in chat_completion_full_generator - cannot determine if tools should be extracted. "
                     "Returning a standard chat completion."
                 )
-                message = ChatMessage(role=role, reasoning_content=reasoning_content, content=content)
+                message = ChatMessage(role=role, reasoning=reasoning, content=content)
 
             choice_data = ChatCompletionResponseChoice(
                 index=output.index,

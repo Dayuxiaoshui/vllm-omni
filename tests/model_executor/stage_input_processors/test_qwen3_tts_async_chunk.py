@@ -90,7 +90,7 @@ def test_flush_on_finish():
         is_finished=True,
     )
     assert p is not None
-    assert p["finished"].item() is True
+    assert p["finished"] is True
     assert len(p["code_predictor_codes"]) == _Q * 24
 
 
@@ -158,24 +158,24 @@ def test_dynamic_ic_adapts_to_load():
 
 
 def test_ic_load_change_mid_request():
-    """IC stateless: load spike mid-request shifts initial_coverage."""
+    """IC cached per-request: load spike does NOT change cached IC for 'r'."""
     tm = _tm(chunk_frames=25, left_context=25, max_num_seqs=8)
 
-    # Low load -> IC=2 -> emit at frame 2
+    # Low load -> IC=2 cached for "r" -> emit at frame 2
     p1 = _call(tm, "r", n_frames=2)
     assert p1 is not None
 
-    # Spike load: 6 others -> IC=16 -> initial_coverage=16
+    # Spike load: 6 others added, but IC for "r" stays cached at 2
     for i in range(6):
         tm.code_prompt_token_ids[f"other-{i}"] = [[0]] * 10
 
-    # adjusted=25-16=9, 9%25!=0 -> hold
+    # IC=2, initial_coverage=24, adjusted=25-24=1, 1%25!=0 -> hold
     assert _call(tm, "r", n_frames=25) is None
 
-    # First normal emit at 16+25=41
-    p3 = _call(tm, "r", n_frames=41)
+    # First normal emit at initial_coverage(24)+chunk_size(25)=49
+    p3 = _call(tm, "r", n_frames=49)
     assert p3 is not None
-    assert p3["left_context_size"] == 16
+    assert p3["left_context_size"] == 24
 
 
 @pytest.mark.parametrize(

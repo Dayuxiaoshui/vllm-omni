@@ -338,7 +338,9 @@ class AsyncOmniEngine:
                         log_stats=False,
                         addresses=addresses,
                     )
-                    engine_manager, coordinator, addresses = launch_cm.__enter__()
+                    # Upstream vLLM launch_core_engines now returns
+                    # (engine_manager, coordinator, addresses, tensor_queue).
+                    engine_manager, coordinator, addresses, _tensor_queue = launch_cm.__enter__()
                     started_stage = StartedLlmStage(
                         stage_id=metadata.stage_id,
                         metadata=metadata,

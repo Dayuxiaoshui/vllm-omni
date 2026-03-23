@@ -85,7 +85,12 @@ class AsyncOmni(EngineClient, OmniBase):
         else:
             vllm_config = self.engine.stage_vllm_configs[stage_index]
             io_processor_plugin = vllm_config.model_config.io_processor_plugin
-            self.io_processor = get_io_processor(vllm_config, io_processor_plugin)
+            renderer = self.renderer
+            if renderer is None:
+                from vllm.renderers import renderer_from_config
+
+                renderer = renderer_from_config(vllm_config)
+            self.io_processor = get_io_processor(vllm_config, renderer, io_processor_plugin)
 
     def _get_comprehension_stage_index(self) -> int | None:
         fallback_idx: int | None = None

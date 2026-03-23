@@ -272,7 +272,7 @@ class OmniGenerationScheduler(VLLMScheduler):
 
         # KVTransfer: package metadata
         if self.connector is not None:
-            meta = self.connector.build_connector_meta(scheduler_output)
+            meta = self._build_kv_connector_meta(self.connector, scheduler_output)
             scheduler_output.kv_connector_metadata = meta
         # EC Connector: package metadata
         if self.ec_connector is not None:

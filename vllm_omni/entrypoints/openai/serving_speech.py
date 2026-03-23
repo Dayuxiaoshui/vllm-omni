@@ -1129,3 +1129,6 @@ class OmniOpenAIServingSpeech(OpenAIServing, AudioMixin):
         except Exception as e:
             logger.exception("Speech generation failed: %s", e)
             return self.create_error_response(f"Speech generation failed: {e}")
+
+
+ServingSpeech = OmniOpenAIServingSpeech

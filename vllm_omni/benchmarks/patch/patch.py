@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import contextlib
 import io
 import json
@@ -14,6 +13,7 @@ from datetime import datetime
 from typing import Literal
 
 import aiohttp
+import pybase64 as base64
 from pydub import AudioSegment
 from tqdm.asyncio import tqdm
 from vllm.benchmarks import datasets
@@ -358,6 +358,7 @@ async def benchmark(
     lora_modules: Iterable[str] | None,
     extra_headers: dict | None,
     extra_body: dict | None,
+    lora_assignment: Literal["random", "round-robin"] = "random",
     ramp_up_strategy: Literal["linear", "exponential"] | None = None,
     ramp_up_start_rps: int | None = None,
     ramp_up_end_rps: int | None = None,
@@ -455,8 +456,11 @@ async def benchmark(
     print("Starting main benchmark run...")
 
     if lora_modules:
-        # For each input request, choose a LoRA module at random.
-        lora_modules = iter([random.choice(lora_modules) for _ in range(len(input_requests))])
+        lora_modules_list = list(lora_modules)
+        if lora_assignment == "round-robin":
+            lora_modules = iter([lora_modules_list[i % len(lora_modules_list)] for i in range(len(input_requests))])
+        else:
+            lora_modules = iter([random.choice(lora_modules_list) for _ in range(len(input_requests))])
 
     if profile:
         print("Starting profiler...")
