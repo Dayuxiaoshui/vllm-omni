@@ -73,6 +73,16 @@ from vllm_omni.platforms import current_omni_platform
 logger = init_logger(__name__)
 
 
+def _patch_generation_config_if_needed(model_config: Any) -> None:
+    """Ensure try_get_generation_config won't crash for models whose HF
+    config.json lacks model_type (e.g. CosyVoice3). We probe it once;
+    if it raises, we monkey-patch the method to return None."""
+    try:
+        model_config.try_get_generation_config()
+    except Exception:
+        model_config.try_get_generation_config = lambda: {}
+
+
 def _inject_kv_stage_info(stage_cfg: Any, stage_id: int) -> None:
     """Inject stage_id and engine_input_source into omni_kv_config.
 
@@ -409,6 +419,12 @@ class AsyncOmniEngine:
             )
             input_processor = None
             if started.stage_id == 0:
+                # Some omni models (e.g. CosyVoice3) have an empty HF
+                # config.json without model_type, which causes
+                # try_get_generation_config -> AutoConfig.from_pretrained
+                # to raise ValueError. Patch it to return None so
+                # InputProcessor doesn't crash.
+                _patch_generation_config_if_needed(started.vllm_config.model_config)
                 input_processor = InputProcessor(vllm_config=started.vllm_config)
                 # Use omni preprocessor so text-only prompts with
                 # mm_processor_kwargs (e.g. GLM-Image t2i target_h/target_w)
@@ -700,6 +716,8 @@ class AsyncOmniEngine:
 
             # Register with stage 0's output processor.
             output_prompt_text = prompt_text
+            if output_prompt_text is None and isinstance(original_prompt, dict):
+                output_prompt_text = original_prompt.get("prompt")
             self.output_processors[0].add_request(
                 request=request,
                 prompt=output_prompt_text,
