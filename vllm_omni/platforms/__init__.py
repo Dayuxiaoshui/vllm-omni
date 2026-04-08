@@ -18,7 +18,6 @@ from vllm_omni.plugins import (
 logger = logging.getLogger(__name__)
 
 
-
 def cuda_omni_platform_plugin() -> str | None:
     """Check if CUDA OmniPlatform should be activated."""
     is_cuda = False
@@ -125,8 +124,9 @@ def musa_omni_platform_plugin() -> str | None:
 def maca_omni_platform_plugin() -> str | None:
     """Check if MACA (MetaX) OmniPlatform should be activated.
 
-    Requires vLLM-metax and a CUDA-compatible torch runtime without discrete
-    NVIDIA GPUs visible to NVML (so we do not collide with CudaOmniPlatform).
+    Requires vLLM-metax and a CUDA-compatible torch runtime. If multiple Omni
+    platform plugins match, set ``VLLM_OMNI_TARGET_DEVICE`` (or adjust the
+    environment) so only one activates.
     """
     logger.debug("Checking if MACA OmniPlatform is available.")
     try:
@@ -140,11 +140,6 @@ def maca_omni_platform_plugin() -> str | None:
         return None
     if not torch.cuda.is_available():
         logger.debug("MACA OmniPlatform is not available: CUDA runtime not available.")
-        return None
-    if _nvidia_nvml_device_count() > 0:
-        logger.debug(
-            "MACA OmniPlatform skipped: NVIDIA GPUs reported by NVML; using CUDA OmniPlatform instead."
-        )
         return None
     logger.debug("Confirmed MACA OmniPlatform is available.")
     return "vllm_omni.platforms.maca.platform.MacaOmniPlatform"

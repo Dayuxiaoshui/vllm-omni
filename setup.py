@@ -75,7 +75,7 @@ def detect_target_device() -> str:
         except ImportError:
             pass
         else:
-            if torch.cuda.is_available() and _nvidia_nvml_gpu_count_for_setup() == 0:
+            if torch.cuda.is_available():
                 print("Detected MACA (MetaX) backend from vllm-metax")
                 return "maca"
 
