@@ -18,6 +18,20 @@ from vllm_omni.plugins import (
 logger = logging.getLogger(__name__)
 
 
+def _nvidia_nvml_device_count() -> int:
+    try:
+        from vllm.utils.import_utils import import_pynvml
+
+        pynvml = import_pynvml()
+        pynvml.nvmlInit()
+        try:
+            return int(pynvml.nvmlDeviceGetCount())
+        finally:
+            pynvml.nvmlShutdown()
+    except Exception:
+        return 0
+
+
 def cuda_omni_platform_plugin() -> str | None:
     """Check if CUDA OmniPlatform should be activated."""
     is_cuda = False
@@ -121,12 +135,41 @@ def musa_omni_platform_plugin() -> str | None:
     return "vllm_omni.platforms.musa.platform.MUSAOmniPlatform" if is_musa else None
 
 
+def maca_omni_platform_plugin() -> str | None:
+    """Check if MACA (MetaX) OmniPlatform should be activated.
+
+    Requires vLLM-metax and a CUDA-compatible torch runtime without discrete
+    NVIDIA GPUs visible to NVML (so we do not collide with CudaOmniPlatform).
+    """
+    logger.debug("Checking if MACA OmniPlatform is available.")
+    try:
+        import torch
+    except Exception as e:
+        logger.debug("MACA OmniPlatform is not available because: %s", str(e))
+        return None
+    try:
+        import vllm_metax  # noqa: F401
+    except ImportError:
+        return None
+    if not torch.cuda.is_available():
+        logger.debug("MACA OmniPlatform is not available: CUDA runtime not available.")
+        return None
+    if _nvidia_nvml_device_count() > 0:
+        logger.debug(
+            "MACA OmniPlatform skipped: NVIDIA GPUs reported by NVML; using CUDA OmniPlatform instead."
+        )
+        return None
+    logger.debug("Confirmed MACA OmniPlatform is available.")
+    return "vllm_omni.platforms.maca.platform.MacaOmniPlatform"
+
+
 builtin_omni_platform_plugins = {
     "cuda": cuda_omni_platform_plugin,
     "rocm": rocm_omni_platform_plugin,
     "npu": npu_omni_platform_plugin,
     "xpu": xpu_omni_platform_plugin,
     "musa": musa_omni_platform_plugin,
+    "maca": maca_omni_platform_plugin,
 }
 
 

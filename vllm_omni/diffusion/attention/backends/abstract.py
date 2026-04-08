@@ -95,6 +95,8 @@ class AttentionImpl(ABC, Generic[T]):
             return self.forward_hip(query, key, value, attn_metadata)
         elif current_omni_platform.is_cuda():
             return self.forward_cuda(query, key, value, attn_metadata)
+        elif current_omni_platform.is_maca():
+            return self.forward_maca(query, key, value, attn_metadata)
         elif current_omni_platform.is_npu():
             return self.forward_npu(query, key, value, attn_metadata)
         elif current_omni_platform.is_xpu():
@@ -149,4 +151,14 @@ class AttentionImpl(ABC, Generic[T]):
         attn_metadata: T | None = None,
     ) -> torch.Tensor:
         # By default, MUSA ops are compatible with CUDA ops.
+        return self.forward_cuda(query, key, value, attn_metadata)
+
+    def forward_maca(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        attn_metadata: T | None = None,
+    ) -> torch.Tensor:
+        # MetaX MACA uses the CUDA-compatible runtime (vLLM-metax).
         return self.forward_cuda(query, key, value, attn_metadata)

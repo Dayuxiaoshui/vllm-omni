@@ -1,0 +1,4 @@
+-r common.txt
+# MetaX MACA: install matching `vllm` + `vllm-metax` wheels or from source per
+# https://github.com/MetaX-MACA/vLLM-metax — not published as a single PyPI extra here.
+onnxruntime>=1.23.2

@@ -21,6 +21,8 @@ class CustomOp(nn.Module):
             return self.forward_hip
         elif current_omni_platform.is_cuda():
             return self.forward_cuda
+        elif current_omni_platform.is_maca():
+            return self.forward_maca
         elif current_omni_platform.is_npu():
             return self.forward_npu
         elif current_omni_platform.is_xpu():
@@ -56,4 +58,8 @@ class CustomOp(nn.Module):
 
     def forward_musa(self, *args, **kwargs):
         # By default, we assume that MUSA ops are compatible with CUDA ops.
+        return self.forward_cuda(*args, **kwargs)
+
+    def forward_maca(self, *args, **kwargs):
+        # MetaX MACA uses the CUDA-compatible runtime (vLLM-metax).
         return self.forward_cuda(*args, **kwargs)

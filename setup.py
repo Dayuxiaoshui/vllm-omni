@@ -3,7 +3,9 @@ Setup script for vLLM-Omni with hardware-dependent installation.
 
 This setup.py implements platform-aware dependency routing so users can run
 `pip install vllm-omni` and automatically receive the correct platform-specific
-dependencies (CUDA/ROCm/CPU/XPU/NPU/MUSA) without requiring extras like `[cuda]`.
+dependencies (CUDA/ROCm/CPU/XPU/NPU/MUSA/MACA) without requiring extras like `[cuda]`.
+
+Optional PyPI vLLM pin (CUDA): ``pip install -e ".[vllm-upstream]"`` (see pyproject.toml).
 """
 
 import os
@@ -40,22 +42,35 @@ def uninstall_onnxruntime() -> None:
         print(f"Warning: Failed to uninstall onnxruntime: {e}")
 
 
+def _nvidia_nvml_gpu_count_for_setup() -> int:
+    try:
+        import pynvml
+
+        pynvml.nvmlInit()
+        try:
+            return int(pynvml.nvmlDeviceGetCount())
+        finally:
+            pynvml.nvmlShutdown()
+    except Exception:
+        return 0
+
+
 def detect_target_device() -> str:
     """
     Detect the target device for installation following RFC priority rules.
 
     Priority order:
     1. VLLM_OMNI_TARGET_DEVICE environment variable (highest priority)
-    2. Torch backend detection (cuda, rocm, npu, xpu, musa)
+    2. Torch backend detection (maca, cuda, rocm, npu, xpu, musa)
     3. CPU fallback (default)
 
     Returns:
-        str: Device name ('cuda', 'rocm', 'npu', 'xpu', 'musa', or 'cpu')
+        str: Device name ('cuda', 'rocm', 'npu', 'xpu', 'musa', 'maca', or 'cpu')
     """
     # Priority 1: Explicit override via environment variable
     target_device = os.environ.get("VLLM_OMNI_TARGET_DEVICE")
     if target_device:
-        valid_devices = ["cuda", "rocm", "npu", "xpu", "musa", "cpu"]
+        valid_devices = ["cuda", "rocm", "npu", "xpu", "musa", "maca", "cpu"]
         if target_device.lower() in valid_devices:
             print(f"Using target device from VLLM_OMNI_TARGET_DEVICE: {target_device.lower()}")
             return target_device.lower()
@@ -68,7 +83,17 @@ def detect_target_device() -> str:
     try:
         import torch
 
-        # Check for CUDA
+        # MACA (MetaX): mcPyTorch may set torch.version.cuda; detect before generic CUDA.
+        try:
+            import vllm_metax  # noqa: F401
+        except ImportError:
+            pass
+        else:
+            if torch.cuda.is_available() and _nvidia_nvml_gpu_count_for_setup() == 0:
+                print("Detected MACA (MetaX) backend from vllm-metax")
+                return "maca"
+
+        # Check for CUDA (NVIDIA)
         if torch.version.cuda is not None:
             print("Detected CUDA backend from torch")
             return "cuda"
@@ -163,6 +188,8 @@ def get_vllm_omni_version() -> str:
             version += f"{sep}xpu"
         elif device == "musa":
             version += f"{sep}musa"
+        elif device == "maca":
+            version += f"{sep}maca"
         elif device == "cpu":
             version += f"{sep}cpu"
         else:

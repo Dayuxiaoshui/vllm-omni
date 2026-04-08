@@ -148,6 +148,8 @@ class DiffusionInt8Config(QuantizationConfig):
             if not self.is_checkpoint_int8_serialized:
                 if current_omni_platform.is_cuda():
                     online_method = Int8OnlineLinearMethod(self)
+                elif current_omni_platform.is_maca():
+                    online_method = Int8OnlineLinearMethod(self)
                 elif current_omni_platform.is_npu():
                     online_method = NPUInt8OnlineLinearMethod(self)
                 else:
@@ -155,6 +157,8 @@ class DiffusionInt8Config(QuantizationConfig):
                 return online_method
             else:
                 if current_omni_platform.is_cuda():
+                    offline_method = Int8LinearMethod(self)
+                elif current_omni_platform.is_maca():
                     offline_method = Int8LinearMethod(self)
                 elif current_omni_platform.is_npu():
                     offline_method = NPUInt8LinearMethod(self)
