@@ -393,10 +393,10 @@ class QwenImagePipelineWithLogProbForTest(QwenImagePipeline):
 
         return DiffusionOutput(
             output=_maybe_to_cpu(image),
+            trajectory_latents=_maybe_to_cpu(all_latents),
+            trajectory_timesteps=_maybe_to_cpu(all_timesteps),
+            trajectory_log_probs=_maybe_to_cpu(all_log_probs),
             custom_output={
-                "all_latents": _maybe_to_cpu(all_latents),
-                "all_log_probs": _maybe_to_cpu(all_log_probs),
-                "all_timesteps": _maybe_to_cpu(all_timesteps),
                 "prompt_embeds": _maybe_to_cpu(prompt_embeds),
                 "prompt_embeds_mask": _maybe_to_cpu(prompt_embeds_mask),
                 "negative_prompt_embeds": _maybe_to_cpu(negative_prompt_embeds),

@@ -191,10 +191,10 @@ async def test_async_omni_generate_with_logprobs():
 
         _assert_valid_image_output(output)
 
-        all_log_probs = output.custom_output.get("all_log_probs")
-        assert all_log_probs is not None, "all_log_probs should be present when logprobs=True"
-        assert hasattr(all_log_probs, "shape")
-        assert all_log_probs.numel() > 0
+        trajectory_log_probs = output.trajectory_log_probs
+        assert trajectory_log_probs is not None, "trajectory_log_probs should be present when logprobs=True"
+        assert hasattr(trajectory_log_probs, "shape")
+        assert trajectory_log_probs.numel() > 0
 
 
 @pytest.mark.core_model
