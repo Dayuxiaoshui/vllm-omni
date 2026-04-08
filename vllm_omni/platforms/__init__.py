@@ -18,19 +18,6 @@ from vllm_omni.plugins import (
 logger = logging.getLogger(__name__)
 
 
-def _nvidia_nvml_device_count() -> int:
-    try:
-        from vllm.utils.import_utils import import_pynvml
-
-        pynvml = import_pynvml()
-        pynvml.nvmlInit()
-        try:
-            return int(pynvml.nvmlDeviceGetCount())
-        finally:
-            pynvml.nvmlShutdown()
-    except Exception:
-        return 0
-
 
 def cuda_omni_platform_plugin() -> str | None:
     """Check if CUDA OmniPlatform should be activated."""
