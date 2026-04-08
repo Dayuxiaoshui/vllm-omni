@@ -32,14 +32,9 @@ classifiers = [
 # Dependencies are now managed dynamically via setup.py based on detected hardware platform.
 # This allows automatic installation of the correct platform-specific dependencies (CUDA/ROCm/CPU/XPU/NPU)
 # without requiring extras like [cuda]. See requirements/ directory for platform-specific dependencies.
-# vLLM is omitted by default so vendor wheels (MACA/MUSA/ROCm/NPU) and console_scripts order stay explicit.
-# CUDA / generic PyPI stack: pip install -e ".[vllm-upstream]"  (do not combine with vllm-metax / vendor vLLM in the same env).
+# Note: vllm is intentionally excluded due to entrypoints overwrite issue.
 
 [project.optional-dependencies]
-
-vllm-upstream = [
-    "vllm==0.19.0",
-]
 
 dev = [
     "pytest>=7.0.0",
