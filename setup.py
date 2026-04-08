@@ -41,20 +41,6 @@ def uninstall_onnxruntime() -> None:
     except Exception as e:
         print(f"Warning: Failed to uninstall onnxruntime: {e}")
 
-
-def _nvidia_nvml_gpu_count_for_setup() -> int:
-    try:
-        import pynvml
-
-        pynvml.nvmlInit()
-        try:
-            return int(pynvml.nvmlDeviceGetCount())
-        finally:
-            pynvml.nvmlShutdown()
-    except Exception:
-        return 0
-
-
 def detect_target_device() -> str:
     """
     Detect the target device for installation following RFC priority rules.
